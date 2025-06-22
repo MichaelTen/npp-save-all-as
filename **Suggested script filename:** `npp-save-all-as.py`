@@ -1,0 +1,42 @@
+# -*- coding: utf-8 -*-
+import os
+import codecs
+from Npp import notepad, editor
+
+# 1) Target folder (will be created if missing)
+target_dir = r'C:\Info\YourChosenDirectory'
+if not os.path.exists(target_dir):
+    os.makedirs(target_dir)
+
+unsaved_count = 0
+open_files = notepad.getFiles()
+
+for fullpath, bufferID, index, view in open_files:
+    # activate this tab and grab its text
+    notepad.activateBufferID(bufferID)
+    text = editor.getText()
+
+    # 2) If it's a byte‐string, decode it into a Unicode object
+    if isinstance(text, str):
+        try:
+            text = unicode(text, 'utf-8')
+        except UnicodeDecodeError:
+            text = unicode(text, 'cp1252', 'ignore')
+
+    # 3) Decide on a filename
+    #    - absolute paths are real files; anything else we treat as "unsaved"
+    if not os.path.isabs(fullpath):
+        unsaved_count += 1
+        fname = 'new %d.txt' % unsaved_count
+    else:
+        fname = os.path.basename(fullpath)
+
+    # 4) Write it out as UTF-8 with the .txt extension
+    dest = os.path.join(target_dir, fname)
+    with codecs.open(dest, 'w', 'utf-8') as out:
+        out.write(text)
+
+# 5) Notify how many you saved
+count = len(open_files)
+notepad.messageBox('Saved %d files to:\n%s' % (count, target_dir),
+                   'Save All Buffers')
